@@ -7,6 +7,7 @@ services:
     container_name: ml-api
     ports:
       - "8002:8000"
+      - "8888:8888"
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     depends_on:
