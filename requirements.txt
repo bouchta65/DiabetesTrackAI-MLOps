@@ -2,7 +2,7 @@
 fastapi==0.111.1
 uvicorn[standard]==0.22.0
 pydantic==2.5.1
-python-multipart==0.0.9
+python-multipart==0.0.18
 
 # ML and Data Science
 scikit-learn>=1.5.0
@@ -21,9 +21,9 @@ httpx==0.27.0
 
 # Code quality tools
 flake8==6.1.0
-black==23.12.1
+black==24.3.0
 isort==5.13.2
-bandit==1.7.5
+bandit==1.7.7
 pbr==5.11.1
 safety==2.3.4
 typer==0.15.1
