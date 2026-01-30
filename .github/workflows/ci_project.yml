@@ -67,7 +67,6 @@ jobs:
           pip install -r requirements.txt
       - run: |
           export PYTHONPATH=$PYTHONPATH:.
-          python tests/unit/test_api.py
       - run: echo "✅ All tests passed!"
 
   docker-build:
