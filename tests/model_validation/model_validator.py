@@ -26,6 +26,8 @@ class ModelValidator:
         elif hasattr(X, 'dtype'):
             if not np.issubdtype(X.dtype, np.number):
                 raise ValueError("All features must be numeric")
+        else:
+            raise ValueError("Input must be pandas DataFrame or numpy array")
 
     def validate_input_columns(self, X):
         """Validate DataFrame columns match expected"""
