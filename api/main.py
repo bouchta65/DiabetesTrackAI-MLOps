@@ -60,18 +60,12 @@ def loadmodel():
             print(f"❌ Error loading latest model: {e2}")
 
 
-@app.get("/health")
-def health():
-    return {"status": "healthy"}
-
 @app.get("/")
 def root():
-    """Endpoint racine de l'API"""
     return {
         "message": "API de prédiction du diabète",
         "version": "1.0.0",
         "endpoints": {
-            "health": "/health",
             "predict": "/predict",
             "docs": "/docs"
         }
@@ -80,15 +74,7 @@ def root():
 
 @app.post("/predict")
 def predict(data: DiabetesInput):
-    """
-    Endpoint de prédiction du cluster de diabète
-    
-    Args:
-        data: Données du patient (DiabetesInput)
-        
-    Returns:
-        Prédiction du cluster et probabilités
-    """
+
     if model is None:
         raise HTTPException(
             status_code=503, 
@@ -106,10 +92,8 @@ def predict(data: DiabetesInput):
         ]
         df = df[column_order]
         
-        # Effectuer la prédiction
         prediction = model.predict(df)
         
-        # Obtenir les probabilités si disponibles
         try:
             probabilities = model.predict_proba(df)
             return {
@@ -119,7 +103,6 @@ def predict(data: DiabetesInput):
                 "input_data": data.dict()
             }
         except AttributeError:
-            # Si predict_proba n'est pas disponible
             return {
                 "prediction": int(prediction[0]),
                 "cluster": int(prediction[0]),

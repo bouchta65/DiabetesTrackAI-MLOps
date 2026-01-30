@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1769678291971
+current_stage: Production
+description: ''
+last_updated_timestamp: 1769678292309
+name: DiabetesClusterClassifier
+run_id: 99453235ec0c4aab9ba7681f54c399c8
+run_link: ''
+source: /mlflow/artifacts/133375125442436332/99453235ec0c4aab9ba7681f54c399c8/artifacts/model
+status: READY
+status_message: null
+storage_location: /mlflow/artifacts/133375125442436332/99453235ec0c4aab9ba7681f54c399c8/artifacts/model
+user_id: null
+version: 2
