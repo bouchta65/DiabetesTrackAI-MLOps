@@ -128,11 +128,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest fastapi httpx
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
       - name: Test API
-        run: python tests/unit/test_api.py
+        run: |
+          export PYTHONPATH=$PYTHONPATH:.
+          python tests/unit/test_api.py
       
       - name: Build summary
         run: |
