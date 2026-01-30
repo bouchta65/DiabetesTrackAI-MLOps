@@ -2,6 +2,9 @@ import mlflow.pyfunc
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import pandas as pd
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from fastapi.responses import Response
+import time
 
 
 app = FastAPI(
@@ -9,6 +12,11 @@ app = FastAPI(
     description="API de prédiction du diabète avec MLflow",
     version="1.0.0"
 )
+
+# Prometheus metrics
+REQUEST_COUNT = Counter('api_requests_total', 'Total API requests', ['method', 'endpoint'])
+REQUEST_DURATION = Histogram('api_request_duration_seconds', 'API request duration')
+PREDICTION_COUNT = Counter('predictions_total', 'Total predictions made', ['result'])
 
 
 class DiabetesInput(BaseModel):
@@ -39,75 +47,66 @@ class DiabetesInput(BaseModel):
 
 
 model = None
+scaler = None
 
 @app.on_event("startup")
 def loadmodel():
-    """Charge le modèle depuis MLflow au démarrage de l'API"""
-    global model
+    global model, scaler
     model_name = "DiabetesClusterClassifier"
     stage = "Production"
     try:
         model = mlflow.pyfunc.load_model(f"models:/{model_name}/{stage}")
-        print(f"✅ Model {model_name} (Stage: {stage}) loaded successfully!")
+        run_id = model.metadata.run_id
+        scaler = mlflow.sklearn.load_model(f"runs:/{run_id}/scaler")
+        print(f"Model and scaler loaded successfully!")
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        print(f"⚠️  Attempting to load latest version...")
-        try:
-            # Essayer de charger la dernière version si Production n'existe pas
-            model = mlflow.pyfunc.load_model(f"models:/{model_name}/latest")
-            print(f"✅ Model {model_name} (latest) loaded successfully!")
-        except Exception as e2:
-            print(f"❌ Error loading latest model: {e2}")
-
-
-@app.get("/")
-def root():
-    return {
-        "message": "API de prédiction du diabète",
-        "version": "1.0.0",
-        "endpoints": {
-            "predict": "/predict",
-            "docs": "/docs"
-        }
-    }
+        print(f"Error loading model: {e}")
 
 
 @app.post("/predict")
 def predict(data: DiabetesInput):
-
-    if model is None:
+    start_time = time.time()
+    REQUEST_COUNT.labels(method='POST', endpoint='/predict').inc()
+    
+    if model is None or scaler is None:
         raise HTTPException(
             status_code=503, 
-            detail="Modèle non chargé. Veuillez attendre le démarrage complet de l'API."
+            detail="Modèle ou scaler non chargé. Veuillez attendre le démarrage complet de l'API."
         )
     
     try:
-        # Convertir les données d'entrée en DataFrame
         df = pd.DataFrame([data.dict()])
         
-        # Assurer l'ordre des colonnes
         column_order = [
             'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness',
             'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age'
         ]
         df = df[column_order]
         
-        prediction = model.predict(df)
+        df_scaled = scaler.transform(df)
+        prediction = model.predict(df_scaled)
         
+        # Record prediction metrics
+        PREDICTION_COUNT.labels(result=str(prediction[0])).inc()
+        
+        probabilities = None
         try:
-            probabilities = model.predict_proba(df)
-            return {
-                "prediction": int(prediction[0]),
-                "cluster": int(prediction[0]),
-                "probabilities": probabilities[0].tolist(),
-                "input_data": data.dict()
-            }
+            probabilities = model.predict_proba(df_scaled)
         except AttributeError:
-            return {
-                "prediction": int(prediction[0]),
-                "cluster": int(prediction[0]),
-                "input_data": data.dict()
-            }
+            pass
+        
+        result = {
+            "prediction": int(prediction[0]),
+            "cluster": int(prediction[0]),
+            "input_data": data.dict()
+        }
+        
+        if probabilities is not None:
+            result["probabilities"] = probabilities[0].tolist()
+        
+        # Record request duration
+        REQUEST_DURATION.observe(time.time() - start_time)
+        return result
             
     except Exception as e:
         raise HTTPException(
