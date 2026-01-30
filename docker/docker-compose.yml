@@ -1,38 +1,26 @@
+version: '3.8'
+
 services:
-
-  api:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    container_name: ml-api
+  diabetes-api:
+    image: ghcr.io/diabetestrackAI-mlops:latest
+    container_name: diabetes-api
     ports:
-      - "8002:8000"
-      - "8888:8888"
+      - "8000:8000"
     environment:
-      - MLFLOW_TRACKING_URI=http://mlflow:5000
-    depends_on:
-      - mlflow
-    networks:
-      - mlops-network
-    volumes: 
-      - ../api:/app/api
-      - ../notebooks:/app/notebooks
-      - ../data:/app/data
-
-  mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.9.2
-    container_name: mlflow
-    ports:
-      - "5000:5000"
-    environment:
-      - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
-      - MLFLOW_ARTIFACT_ROOT=/mlflow/artifacts
+      - PYTHONPATH=/app
+      - MLFLOW_TRACKING_URI=file:///app/mlruns
+      - MODEL_NAME=diabetes_model
+      - MODEL_VERSION=latest
     volumes:
-      - ../mlflow/mlflow_data:/mlflow
-      - ../mlflow/mlruns:/mlruns
-    command: mlflow server --host 0.0.0.0 --port 5000 --default-artifact-root /mlflow/artifacts
-    networks:
-      - mlops-network
+      - mlflow_data:/app/mlruns
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   prometheus:
     image: prom/prometheus:latest
@@ -40,28 +28,36 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    networks:
-      - mlops-network
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3001:3000"
+      - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
-    networks:
-      - mlops-network
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+    depends_on:
+      - prometheus
 
 volumes:
   mlflow_data:
+  prometheus_data:
   grafana_data:
 
 networks:
-  mlops-network:
-    driver: bridge
+  default:
+    name: diabetes-mlops
