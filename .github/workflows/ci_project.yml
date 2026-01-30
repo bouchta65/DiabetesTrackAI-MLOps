@@ -107,7 +107,7 @@ jobs:
           pip install pandas numpy scikit-learn joblib imbalanced-learn
       
       - name: Validate model performance
-        run: python tests/model_validator.py
+        run: python tests/model_validation/model_validator.py
           
 
   build-and-test:
