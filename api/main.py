@@ -48,51 +48,17 @@ def loadmodel():
     stage = "Production"
     try:
         model = mlflow.pyfunc.load_model(f"models:/{model_name}/{stage}")
-        # Load the scaler from the same run
         run_id = model.metadata.run_id
         scaler = mlflow.sklearn.load_model(f"runs:/{run_id}/scaler")
         print(f"Model and scaler loaded successfully!")
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        print(f"⚠️  Attempting to load latest version...")
-        try:
-            # Essayer de charger la dernière version si Production n'existe pas
-            model = mlflow.pyfunc.load_model(f"models:/{model_name}/latest")
-            print(f"✅ Model {model_name} (latest) loaded successfully!")
-        except Exception as e2:
-            print(f"❌ Error loading latest model: {e2}")
+        print(f"Error loading model: {e}")
 
-
-@app.get("/health")
-def health():
-    return {"status": "healthy"}
-
-@app.get("/")
-def root():
-    """Endpoint racine de l'API"""
-    return {
-        "message": "API de prédiction du diabète",
-        "version": "1.0.0",
-        "endpoints": {
-            "health": "/health",
-            "predict": "/predict",
-            "docs": "/docs"
-        }
-    }
 
 
 @app.post("/predict")
 def predict(data: DiabetesInput):
-    """
-    Endpoint de prédiction du cluster de diabète
-    
-    Args:
-        data: Données du patient (DiabetesInput)
-        
-    Returns:
-        Prédiction du cluster et probabilités
-    """
-    if model is None:
+    if model is None or scaler is None:
         raise HTTPException(
             status_code=503, 
             detail="Modèle ou scaler non chargé. Veuillez attendre le démarrage complet de l'API."
@@ -107,23 +73,25 @@ def predict(data: DiabetesInput):
         ]
         df = df[column_order]
         
-        # Effectuer la prédiction
-        prediction = model.predict(df)
+        df_scaled = scaler.transform(df)
+        prediction = model.predict(df_scaled)
         
+        probabilities = None
         try:
             probabilities = model.predict_proba(df_scaled)
-            return {
-                "prediction": int(prediction[0]),
-                "cluster": int(prediction[0]),
-                "probabilities": probabilities[0].tolist(),
-                "input_data": data.dict()
-            }
         except AttributeError:
-            return {
-                "prediction": int(prediction[0]),
-                "cluster": int(prediction[0]),
-                "input_data": data.dict()
-            }
+            pass
+        
+        result = {
+            "prediction": int(prediction[0]),
+            "cluster": int(prediction[0]),
+            "input_data": data.dict()
+        }
+        
+        if probabilities is not None:
+            result["probabilities"] = probabilities[0].tolist()
+            
+        return result
             
     except Exception as e:
         raise HTTPException(
