@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   diabetes-api:
     image: ghcr.io/diabetestrackAI-mlops:latest
