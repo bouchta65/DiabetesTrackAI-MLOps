@@ -85,5 +85,5 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build & Push image
         run: |
-          docker build -f docker/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/diabetes-api:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/diabetes-api:latest
+          docker build -f docker/Dockerfile -t bouchta65/diabetestrackai-mlops:latest .
+          docker push bouchta65/diabetestrackai-mlops:latest
