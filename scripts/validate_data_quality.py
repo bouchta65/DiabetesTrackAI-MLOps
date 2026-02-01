@@ -3,7 +3,7 @@ import numpy as np
 import sys
 import os
 
-def validate_data_quality():
+def validate_data_quality():    
     errors = []
     warnings = []
     

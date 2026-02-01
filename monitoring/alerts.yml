@@ -1,0 +1,63 @@
+groups:
+  - name: ml_api_alerts
+    interval: 30s
+    rules:
+      # Alert if API is down
+      - alert: APIDown
+        expr: up{job="ml-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ML API is down"
+          description: "The ML API has been down for more than 1 minute"
+
+      # Alert if model is not loaded
+      - alert: ModelNotLoaded
+        expr: model_loaded == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ML Model not loaded"
+          description: "The ML model is not loaded in the API"
+
+      # Alert on high error rate
+      - alert: HighErrorRate
+        expr: rate(api_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API error rate"
+          description: "Error rate is {{ $value }} errors/sec over the last 5 minutes"
+
+      # Alert on high latency
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(api_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API latency"
+          description: "95th percentile latency is {{ $value }}s over the last 5 minutes"
+
+      # Alert on slow inference
+      - alert: SlowInference
+        expr: histogram_quantile(0.95, rate(model_inference_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow model inference"
+          description: "95th percentile inference time is {{ $value }}s"
+
+      # Alert on many active requests (potential bottleneck)
+      - alert: HighConcurrentRequests
+        expr: api_active_requests > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of concurrent requests"
+          description: "{{ $value }} requests are being processed simultaneously"
