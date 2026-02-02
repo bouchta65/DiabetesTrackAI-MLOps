@@ -17,7 +17,7 @@ env:
 jobs:
 
   validate-data:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -29,7 +29,7 @@ jobs:
       - run: python tests/data_validation/run_validation.py
 
   code-quality:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -46,7 +46,7 @@ jobs:
       - run: safety check -r requirements.txt
 
   validate-model:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: validate-data
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
       - run: python tests/model_validation/run_validation.py
 
   test-and-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [validate-data, code-quality, validate-model]
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
       - run: echo "✅ All tests passed!"
 
   docker:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: test-and-build
     if: github.event_name == 'push'
     steps:
