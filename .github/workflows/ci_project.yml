@@ -26,7 +26,7 @@ jobs:
       - run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-      - run: python tests/data_validation/data_validator.py
+      - run: python tests/data_validation/run_validation.py
 
   code-quality:
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
       - run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-      - run: python tests/model_validation/model_validator.py
+      - run: python tests/model_validation/run_validation.py
 
   test-and-build:
     runs-on: ubuntu-latest
