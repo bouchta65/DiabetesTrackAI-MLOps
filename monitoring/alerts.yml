@@ -1,0 +1,21 @@
+groups:
+- name: api-alerts
+  rules:
+
+  - alert: HighRequestRate
+    expr: sum(rate(api_requests_total[1m])) > 0.2
+    for: 5s
+    labels:
+      severity: warning
+    annotations:
+      summary: "High API traffic"
+      description: "API receiving more than 10 requests/sec"
+
+  - alert: HighLatency
+    expr: histogram_quantile(0.95, sum(rate(api_request_duration_seconds_bucket[1m])) by (le)) > 1
+    for: 30s
+    labels:
+      severity: critical
+    annotations:
+      summary: "High API latency"
+      description: "95th percentile latency > 1 second"
