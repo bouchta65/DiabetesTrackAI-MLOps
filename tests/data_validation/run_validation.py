@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from data_validator import DataValidator
 
-data_path = Path(__file__).parent.parent.parent / "data" / "processed" / "*.csv"
+data_path = Path(__file__).parent.parent.parent / "data" / "raw" / "*.csv"
 validator = DataValidator()
 csv_files = glob.glob(str(data_path))
 
