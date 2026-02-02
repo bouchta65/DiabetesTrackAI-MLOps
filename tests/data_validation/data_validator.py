@@ -7,7 +7,7 @@ class DataValidator:
             'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age'
         ]
         self.feature_ranges = {
-            'Pregnancies': (0, 40),
+            'Pregnancies': (0, 100),
             'Glucose': (0, 300),
             'BloodPressure': (0, 200),
             'SkinThickness': (0, 100),
